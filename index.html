@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大生纱厂厂长模拟</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Noto Serif SC', 'Microsoft YaHei', sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d132c 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: #fff;
+      padding: 15px;
+    }
+    .game-container {
+      width: 100%;
+      max-width: 700px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 20px;
+      padding: 25px;
+      border: 1px solid rgba(248, 196, 113, 0.3);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid rgba(248, 196, 113, 0.2);
+    }
+    .game-title { font-size: 1.4rem; color: #f8c471; text-shadow: 0 0 15px rgba(248, 196, 113, 0.4); }
+    .stats { display: flex; gap: 20px; font-size: 0.95rem; }
+    .stat { display: flex; align-items: center; gap: 5px; }
+    .stat-icon { font-size: 1.2rem; }
+    .score-value { color: #2ecc71; font-weight: bold; }
+    .progress-value { color: #f8c471; }
+    .start-screen { text-align: center; padding: 30px 20px; }
+    .start-icon { font-size: 5rem; margin-bottom: 20px; animation: float 2s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    .start-title { font-size: 1.8rem; color: #f8c471; margin-bottom: 15px; }
+    .start-desc { font-size: 1rem; line-height: 1.8; opacity: 0.85; margin-bottom: 25px; }
+    .start-desc em { color: #f8c471; font-style: normal; }
+    .rule-box { background: rgba(0, 0, 0, 0.3); border-radius: 12px; padding: 20px; margin-bottom: 25px; text-align: left; }
+    .rule-box h3 { color: #f8c471; margin-bottom: 12px; font-size: 1.1rem; }
+    .rule-box ul { list-style: none; font-size: 0.95rem; line-height: 1.8; }
+    .rule-box li::before { content: '▸ '; color: #f8c471; }
+    .start-btn, .restart-btn {
+      background: linear-gradient(135deg, #b7950b, #9a7d0a);
+      border: 2px solid #f8c471;
+      color: #fff;
+      padding: 15px 50px;
+      border-radius: 30px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+    .start-btn:hover, .restart-btn:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(248, 196, 113, 0.4); }
+    .game-screen { display: none; }
+    .scenario-card {
+      background: linear-gradient(135deg, rgba(139, 90, 43, 0.2), rgba(139, 90, 43, 0.05));
+      border: 1px solid rgba(248, 196, 113, 0.3);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .scenario-card::before { content: '📜'; position: absolute; top: -12px; left: 20px; font-size: 1.5rem; background: #1a1a2e; padding: 0 10px; }
+    .scenario-content { display: flex; gap: 20px; align-items: flex-start; }
+    .scenario-image { flex-shrink: 0; width: 120px; height: 120px; border-radius: 12px; overflow: hidden; border: 2px solid rgba(248, 196, 113, 0.4); background: rgba(0,0,0,0.3); }
+    .scenario-image img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .scenario-label { font-size: 0.85rem; color: #f8c471; margin-bottom: 10px; letter-spacing: 1px; }
+    .scenario-text { font-size: 1.2rem; line-height: 1.7; color: #ecf0f1; flex: 1; }
+    .options { display: flex; flex-direction: column; gap: 12px; }
+    .option-btn {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+      border: 2px solid rgba(248, 196, 113, 0.3);
+      color: #ecf0f1;
+      padding: 18px 20px;
+      border-radius: 12px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-align: left;
+      font-family: inherit;
+      line-height: 1.5;
+    }
+    .option-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(248, 196, 113, 0.2), rgba(248, 196, 113, 0.1));
+      border-color: #f8c471;
+      transform: translateX(5px);
+    }
+    .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+    .option-btn.correct { background: linear-gradient(135deg, #27ae60, #1e8449) !important; border-color: #2ecc71 !important; animation: correctPop 0.5s ease; }
+    .option-btn.wrong { background: linear-gradient(135deg, #c0392b, #922b21) !important; border-color: #e74c3c !important; animation: shake 0.5s ease; }
+    @keyframes correctPop { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25%, 75% { transform: translateX(-5px); } }
+    .feedback { margin-top: 20px; padding: 20px; border-radius: 12px; text-align: left; display: none; }
+    .feedback.show { display: block; animation: slideIn 0.3s ease; }
+    .feedback.correct { background: rgba(39, 174, 96, 0.15); border: 1px solid #27ae60; color: #2ecc71; }
+    .feedback.wrong { background: rgba(192, 57, 43, 0.15); border: 1px solid #c0392b; color: #e74c3c; }
+    .feedback-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 10px; }
+    .feedback-text { font-size: 0.9rem; line-height: 1.7; opacity: 0.9; margin-bottom: 8px; }
+    .feedback-divider { border-top: 1px dashed rgba(255,255,255,0.3); margin: 10px 0; }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    .result-screen { display: none; text-align: center; padding: 30px 20px; }
+    .result-icon { font-size: 5rem; margin-bottom: 20px; }
+    .result-title { font-size: 2rem; margin-bottom: 15px; }
+    .result-score { font-size: 1.3rem; margin-bottom: 20px; padding: 15px; background: rgba(0, 0, 0, 0.2); border-radius: 10px; }
+    .result-comment { font-size: 1rem; line-height: 1.8; opacity: 0.85; margin-bottom: 25px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 10px; }
+    .result-knowledge { text-align: left; background: rgba(248, 196, 113, 0.1); border: 1px solid rgba(248, 196, 113, 0.3); border-radius: 12px; padding: 15px; margin-bottom: 25px; }
+    .result-knowledge h4 { color: #f8c471; margin-bottom: 10px; }
+    .result-knowledge p { font-size: 0.9rem; line-height: 1.7; opacity: 0.9; }
+    .progress-bar { width: 100%; height: 6px; background: rgba(0, 0, 0, 0.3); border-radius: 3px; margin-top: 15px; overflow: hidden; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #f39c12, #f8c471); transition: width 0.5s ease; border-radius: 3px; }
+    .next-btn { display: none; background: linear-gradient(135deg, #3498db, #2980b9); border: none; color: #fff; padding: 12px 35px; border-radius: 25px; font-size: 1rem; cursor: pointer; margin-top: 15px; font-family: inherit; transition: all 0.3s ease; }
+    .next-btn.show { display: inline-block; }
+    .next-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(52, 152, 219, 0.4); }
+    @media (max-width: 500px) { 
+      .game-title { font-size: 1.1rem; } 
+      .stats { gap: 12px; font-size: 0.85rem; } 
+      .scenario-text { font-size: 1.05rem; } 
+      .option-btn { font-size: 0.95rem; padding: 15px; }
+      .scenario-content { flex-direction: column; }
+      .scenario-image { width: 100%; height: 180px; margin-bottom: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <div class="header">
+      <h1 class="game-title">🏭 大生纱厂厂长模拟</h1>
+      <div class="stats">
+        <div class="stat"><span class="stat-icon">⭐</span><span class="score-value" id="scoreDisplay">0</span></div>
+        <div class="stat"><span class="stat-icon">📋</span><span class="progress-value"><span id="currentQ">0</span>/<span id="totalQ">10</span></span></div>
+      </div>
+    </div>
+
+    <div id="startScreen" class="start-screen">
+      <div class="start-icon">🏭</div>
+      <h2 class="start-title">张謇的管理之道</h2>
+      <p class="start-desc">清光绪年间，你接手创办<em>大生纱厂</em>——中国首家近代机械棉纺厂。<br>面对工厂管理的种种难题，你需要做出决策。</p>
+      <div class="rule-box">
+        <h3>📜 游戏规则</h3>
+        <ul>
+          <li>阅读厂务情景，选择你的管理决策</li>
+          <li>决策正确 +10 分</li>
+          <li>决策错误 -5 分</li>
+          <li>共 10 道情景题</li>
+        </ul>
+      </div>
+      <button class="start-btn" onclick="startGame()">马上开始</button>
+    </div>
+
+    <div id="gameScreen" class="game-screen">
+      <div class="scenario-card">
+        <div class="scenario-label">【厂务情景】</div>
+        <div class="scenario-content">
+          <div class="scenario-image" id="scenarioImage"></div>
+          <div class="scenario-text" id="scenarioText">加载中...</div>
+        </div>
+      </div>
+      <div class="options" id="optionsContainer"></div>
+      <div id="feedback" class="feedback"></div>
+      <button id="nextBtn" class="next-btn" onclick="nextQuestion()">下一题 →</button>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+
+    <div id="resultScreen" class="result-screen">
+      <div class="result-icon" id="resultIcon">🏆</div>
+      <h2 class="result-title" id="resultTitle">经营有方！</h2>
+      <div class="result-score" id="resultScore">最终得分：0 分</div>
+      <div class="result-comment" id="resultComment"></div>
+      <div class="result-knowledge">
+        <h4>📚 藏品介绍</h4>
+        <p id="knowledgeText"></p>
+      </div>
+      <button class="restart-btn" onclick="restartGame()">再试一次</button>
+    </div>
+  </div>
+
+  <script>
+    const imageUrls = [
+      "https://s.coze.cn/image/lWsUjTbhErA/",  // 鸦片工人
+      "https://s.coze.cn/image/fO2Ukk7UJDk/",  // 出门检查
+      "https://s.coze.cn/image/oXKRGtOjPz0/",  // 商人贿赂
+      "https://s.coze.cn/image/uaBo94edBDs/",  // 年终分红
+      "https://s.coze.cn/image/KG7CCcF74ls/",  // 监工推诿
+      "https://s.coze.cn/image/GCGQKB_gq_0/",  // 工厂竞争
+      "https://s.coze.cn/image/-Cxs5GjJeRQ/",  // 质量检查
+      "https://s.coze.cn/image/ht798Uk0ztU/",  // 权力集中（无皇帝）
+      "https://s.coze.cn/image/mn6esXxWVU4/",  // 喝酒打架
+      "https://s.coze.cn/image/Oa3l4JpQZ1w/"   // 机器更换
+    ];
+
+    const scenarios = [
+      {
+        text: "有工人染上了鸦片瘾，又抽烟又犯困，根本干不了活，还影响其他工人。你怎么办？",
+        options: ["直接开除，眼不见为净", "给三个月假，让工人自己戒，戒掉再回来上班", "管他呢，工人自己的事", "扣他工资，但让他继续干"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇的做法是给戒烟期限，既帮工人改过，又留住熟练工人。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 直接开除：工人丢了工作可能铤而走险，而且工厂会损失熟练工人，再招人还要重新培训。<br><br>❌ 不管不顾：鸦片成瘾会传染，一个带一片，整个厂子风气都会坏掉。<br><br>❌ 扣工资继续干：工人身体都垮了，根本干不了活，扣再多钱也没用。<br><br>✅ 张謇的做法：给三个月假让工人自戒。这样既给了工人改过的机会，又能筛选出真心想改的人。戒掉的是好员工，戒不掉的自会离开，工厂也不吃亏。"
+        }
+      },
+      {
+        text: "棉花原料老是莫名其妙变少，明显是有人偷夹带出厂。你怎么管？",
+        options: ["在厂门口安排专人检查，谁进出都要搜身", "干脆让工人吃住都在厂里，不准出厂", "抓到小偷就打，吓唬其他人", "多招工人，人多了监管压力就小了"],
+        correct: 0,
+        feedback: {
+          correct: "答对了！在门口设检查是最直接有效的办法。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 吃住都在厂里：工人有家有口，这样搞没人愿意来上班，招聘都成问题。<br><br>❌ 打人吓唬：打人犯法，而且工人会恨上你，整天想着报复，生产更不安全。<br><br>❌ 多招人：人多嘴杂更难管，反而增加管理成本和风险。<br><br>✅ 张謇的做法：在门口设稽查员，检查进出人员和物品。简单有效，不侵犯人权，还能抓到现行。"
+        }
+      },
+      {
+        text: "有个棉花商人既是供应商，又和厂里某工人是亲戚，经常高价卖给厂里棉花。你怎么处理？",
+        options: ["睁一只眼闭一只眼，只要不太过分就行", "禁止棉花商人和厂里工人合伙做生意，断绝利益输送", "把商人换成自己家亲戚，更放心", "定期抽查就好，不用管太严"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇从制度上堵住漏洞，不给人留机会。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 睁一只眼闭一只眼：商人看你好欺负，只会变本加厉，工厂采购成本越来越高。<br><br>❌ 换成自己人：自己人照样能贪污，而且换成外人还会说你任人唯亲，里外不是人。<br><br>❌ 定期抽查：抽查是事后补救，人家早就把钱装兜里了，查出来也晚了。<br><br>✅ 张謇的做法：直接立规矩禁止商人与工人合伙，从源头切断利益链。制度定死了，谁都没话说。"
+        }
+      },
+      {
+        text: "快过年了，想让工人明年更努力干活。你打算怎么奖励他们？",
+        options: ["过年多发一个月奖金", "把工厂赚的钱分给大家：股东拿大头，管理人员和技术骨干也分一些", "开大会表扬，发张奖状", "让优秀工人放几天假休息"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇的分红制度让所有人都变成工厂的主人。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 多发一个月奖金：一次性奖励，发完就没了，工人过了年照样磨洋工。<br><br>❌ 发奖状表扬：精神奖励当然要有，但没有物质激励，时间长了谁还在乎一张纸？<br><br>❌ 放假休息：放假是好，但和干活挂钩不大，工人觉得你在敷衍他。<br><br>✅ 张謇的做法：利润分红制度。股东拿10份，管理人员拿2份，普通员工拿1份。这样工人觉得工厂有自己一份，干活就是给自己干，积极性完全不同。"
+        }
+      },
+      {
+        text: "有些监工（小组长）特别油滑，活干不好就怪机器、怪原料、怪别人，从来不找自己问题。你怎么治他们？",
+        options: ["全部撤换，换成听话的新人", "建立考核制度，每月评分，干得好有奖，干不好要罚", "扣发所有监工工资", "只要产量过得去就不管了"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！用制度管人比换人有效得多。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 全部撤换：新人来了照样可能偷懒，而且熟悉业务需要时间，换人太频繁工厂就乱了。<br><br>❌ 扣工资：没有依据就扣钱，监工会觉得你乱来，可能会集体撂挑子或者阳奉阴违。<br><br>❌ 不管了：问题会越来越严重，好监工看到偷懒的没事，也会跟着学。<br><br>✅ 张謇的做法：建立功过考核制度。每月打分，功分三等，奖分三级。有据可查，有奖有罚，监工心服口服，干得好的有盼头，干不好的自己就急了。"
+        }
+      },
+      {
+        text: "你有两个分厂，一个管得好一个管得差，效率差很多。你想提升整体效率怎么办？",
+        options: ["让工人每天多干2小时，加班赶产量", "两个厂比一比，谁干得好谁拿奖多，公平竞争", "多招廉价工人，人多力量大", "把管得差的厂直接关掉"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！竞争机制让两个厂都拼命往前跑。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 强制加班：工人累垮了效率反而下降，而且加班费是一笔大开销，成本反而更高。<br><br>❌ 多招人：人多不代表效率高，新人还要培训，管理成本蹭蹭涨。<br><br>❌ 关掉厂子：关厂要赔钱给工人、合作伙伴，而且你把分厂的人都得罪了，以后谁还敢跟你干。<br><br>✅ 张謇的做法：分厂比赛。每个厂都有荣誉感和利益驱动，不用你催，自己就比着干。输了面子上过不去，奖金也少，谁不拼命？"
+        }
+      },
+      {
+        text: "棉花收购的时候，质量参差不齐，有的还掺假。纺出来的纱质量不稳定，客户投诉。你怎么管原料质量？",
+        options: ["随便收，质量好不好全看运气", "棉花进厂要检查，纺出来的纱也要检查，双向把关", "只买最贵的进口棉花", "让工人自己把关，出问题罚工人"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇建立了双向检验制度，堵住每个漏洞。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 随便收：质量没保障，客户退货、索赔，口碑砸了订单越来越少。<br><br>❌ 只买贵的：进口棉花成本太高，价格没竞争力，卖不出去照样亏本。<br><br>❌ 让工人自己管：工人又不是质检员，让他们背锅只会让大家离心离德。<br><br>✅ 张謇的做法：双向检查制度。棉花进厂时查一次，纺成纱出厂时再查一次。进和出都有记录，哪个环节出问题一清二楚，谁也不敢马虎。"
+        }
+      },
+      {
+        text: "作为一厂之主，你觉得管好工厂最重要的是什么？",
+        options: ["大事小事都得我点头，不放心别人", "权力集中，但要定好规矩，按规矩办事", "把权力全分给手下，我只管收钱", "能赚钱就行，什么规矩不规矩的无所谓"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇的管理哲学就是「集中权力+制度治厂」。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 事必躬亲：你一个人忙死也管不过来，该做的决策反而没精力做。<br><br>❌ 权力全分：手下各干各的，没有统一指挥，工厂迟早乱套。<br><br>❌ 只要赚钱：短期可能赚钱，但质量、安全、员工关系都会出问题，早晚出事。<br><br>✅ 张謇的做法：权力集中，但用制度管事。一把手说了算，但所有决定都按白纸黑字的厂规来。这样既有效率，又公平公正，大家心服口服。"
+        }
+      },
+      {
+        text: "工人下班后经常喝酒闹事，打架伤人，厂里秩序很乱。你怎么管？",
+        options: ["禁止工人喝酒，抓到直接开除", "厂里立规矩，明确规定喝酒闹事的处罚，大家都知道红线在哪", "不管，那是工人下班后的自由", "把带头闹事的几个人打一顿，其他人就不敢了"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇用明确的厂规来管束工人行为，比简单粗暴的方式有效得多。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 直接禁止喝酒：工人也有正常的生活需求，完全禁止会让工人反感，而且执行难度大。<br><br>❌ 不管不顾：工人闹事影响工厂名声和安全，其他守规矩的工人也会不满。<br><br>❌ 打人立威：打人犯法，而且只会让矛盾更激化，工人可能集体反抗。<br><br>✅ 张謇的做法：立规矩！明确告诉工人什么是可以做的、什么是不可以做的，违规会有什么后果。白纸黑字写清楚，大家心服口服，处罚也有据可依。"
+        }
+      },
+      {
+        text: "纱厂机器用久了效率下降，想换新机器但要花很多钱。你怎么办？",
+        options: ["能用就继续用，凑合着过", "按规矩来，机器多少年该换就按规矩换，保证生产效率", "把机器修修补补接着用，能省就省", "不管这事，让下面的人自己决定"],
+        correct: 1,
+        feedback: {
+          correct: "答对了！张謇建立了设备更换制度，保证机器始终在最佳状态。",
+          wrong: "你选的这个做法有问题：<br><br>❌ 凑合着用：老机器效率低、故障多，反而更费钱，而且次品率高影响质量。<br><br>❌ 只修不换：修机器也是钱，而且修几次加起来可能比买新的还贵。<br><br>❌ 撒手不管：设备更新是大事，一把手不管谁管？出问题算谁的？<br><br>✅ 张謇的做法：按制度办。机器多少年一换，写在厂规里，到时间就换。这样既保证生产效率，又不会突然花大钱，提前做好预算就行。"
+        }
+      }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let isAnswering = false;
+    let shuffledScenarios = [];
+    let currentOptions = []; // 存储当前题目的选项顺序
+
+    function shuffleScenarios() {
+      shuffledScenarios = [...scenarios].sort(() => Math.random() - 0.5);
+    }
+
+    function updateDisplay() {
+      document.getElementById('scoreDisplay').textContent = score;
+      document.getElementById('currentQ').textContent = currentQuestion + 1;
+      document.getElementById('totalQ').textContent = shuffledScenarios.length;
+      const pct = shuffledScenarios.length > 0 ? (currentQuestion / shuffledScenarios.length * 100) : 0;
+      document.getElementById('progressFill').style.width = pct + '%';
+    }
+
+    // 随机打乱选项并返回新顺序
+    function shuffleOptions(options, correctIndex) {
+      const indexedOptions = options.map((text, idx) => ({ text, originalIndex: idx }));
+      // 打乱顺序
+      for (let i = indexedOptions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [indexedOptions[i], indexedOptions[j]] = [indexedOptions[j], indexedOptions[i]];
+      }
+      // 找出新顺序中正确答案的位置
+      const newCorrectIndex = indexedOptions.findIndex(item => item.originalIndex === correctIndex);
+      return { options: indexedOptions.map(item => item.text), correctIndex: newCorrectIndex };
+    }
+
+    function showQuestion() {
+      const q = shuffledScenarios[currentQuestion];
+      const originalIndex = scenarios.indexOf(q);
+      document.getElementById('scenarioText').textContent = q.text;
+      const imageContainer = document.getElementById('scenarioImage');
+      imageContainer.innerHTML = '<img src="' + imageUrls[originalIndex] + '" alt="情景配图">';
+      
+      // 随机打乱选项
+      const shuffled = shuffleOptions(q.options, q.correct);
+      currentOptions = shuffled;
+      
+      const container = document.getElementById('optionsContainer');
+      container.innerHTML = '';
+      shuffled.options.forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'option-btn';
+        btn.textContent = String.fromCharCode(65 + index) + '. ' + opt; // A. B. C. D.
+        btn.onclick = () => selectAnswer(index);
+        container.appendChild(btn);
+      });
+      document.getElementById('feedback').className = 'feedback';
+      document.getElementById('nextBtn').classList.remove('show');
+      updateDisplay();
+    }
+
+    function selectAnswer(index) {
+      if (isAnswering) return;
+      isAnswering = true;
+      const buttons = document.querySelectorAll('.option-btn');
+      buttons.forEach(btn => btn.disabled = true);
+      const feedback = document.getElementById('feedback');
+      const isCorrect = index === currentOptions.correctIndex;
+      const q = shuffledScenarios[currentQuestion];
+      if (isCorrect) {
+        buttons[index].classList.add('correct');
+        score += 10;
+        feedback.className = 'feedback show correct';
+        feedback.innerHTML = '<div class="feedback-title">✓ 回答正确！</div><div class="feedback-text">' + q.feedback.correct + '</div>';
+      } else {
+        buttons[index].classList.add('wrong');
+        buttons[currentOptions.correctIndex].classList.add('correct');
+        score = Math.max(0, score - 5);
+        feedback.className = 'feedback show wrong';
+        feedback.innerHTML = '<div class="feedback-title">✗ 这题答错了</div><div class="feedback-text">' + q.feedback.wrong + '</div>';
+      }
+      updateDisplay();
+      if (currentQuestion < shuffledScenarios.length - 1) {
+        document.getElementById('nextBtn').classList.add('show');
+      } else {
+        setTimeout(showResult, 2000);
+      }
+      isAnswering = false;
+    }
+
+    function nextQuestion() {
+      currentQuestion++;
+      showQuestion();
+    }
+
+    function showResult() {
+      document.getElementById('gameScreen').style.display = 'none';
+      document.getElementById('resultScreen').style.display = 'block';
+      const maxScore = shuffledScenarios.length * 10;
+      const percentage = score / maxScore;
+      document.getElementById('resultScore').textContent = '最终得分：' + score + ' 分（满分 ' + maxScore + ' 分）';
+      const icon = document.getElementById('resultIcon');
+      const title = document.getElementById('resultTitle');
+      const comment = document.getElementById('resultComment');
+      if (percentage >= 0.8) {
+        icon.textContent = '🏆';
+        title.textContent = '经营有方！';
+        title.style.color = '#f1c40f';
+        comment.textContent = '你深谙张謇的管理之道！大生纱厂在你的治理下蒸蒸日上，必将成为中国近代工业的典范！';
+      } else if (percentage >= 0.5) {
+        icon.textContent = '👍';
+        title.textContent = '初具心得';
+        title.style.color = '#3498db';
+        comment.textContent = '你对工厂管理已有一定了解，但仍需精进。多读《论厂事卷》，学习张謇的治厂智慧！';
+      } else {
+        icon.textContent = '📜';
+        title.textContent = '尚需学习';
+        title.style.color = '#e74c3c';
+        comment.textContent = '管理之道非一日之功。建议再仔细研读张謇的厂规厂纪，从中汲取治厂经验！';
+      }
+      document.getElementById('knowledgeText').textContent = '《论厂事卷》是张謇于大生纱厂创办初期（约1899-1905年）发布的内部通函，涵盖鸦片禁令、功过考核、防弊制度、年终奖励等管理规范，体现了张謇「权力集中、制度治厂」的管理哲学。';
+    }
+
+    function startGame() {
+      document.getElementById('startScreen').style.display = 'none';
+      document.getElementById('gameScreen').style.display = 'block';
+      document.getElementById('resultScreen').style.display = 'none';
+      currentQuestion = 0;
+      score = 0;
+      shuffleScenarios();
+      showQuestion();
+    }
+
+    function restartGame() {
+      startGame();
+    }
+  </script>
+</body>
+</html>
